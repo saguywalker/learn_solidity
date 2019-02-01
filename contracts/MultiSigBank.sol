@@ -47,5 +47,14 @@ contract MultiSigBank{
         emit Deposit(_partyId, msg.value);
     }
 
+    function allowWithdraw(bytes32 _partyId) external{
+        require(party[_partyId].isCreate);
+        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
 
+        if(msg.sender == party[_partyId].person1.personAddr){
+            party[_partyId].person1.isAllowWithdraw = true;
+        }else{
+            party[_partyId].person2.isAllowWithdraw = true;
+        }
+    }
 }
