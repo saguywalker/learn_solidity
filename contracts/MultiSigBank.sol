@@ -4,16 +4,17 @@ contract MultiSigBank{
 
     struct Person{
         address payable personAddr;
-        bool isAllow;
+        bool isAllowWithdraw;
     }
 
     struct Party{
         Person person1;
         Person person2;
         uint256 amount;
+        bool isCreate;
     }
 
-    mapping(bytes32 => Party) partyId;
+    mapping(bytes32 => Party) party;
 
     event CreateParty(bytes32 indexed partyId, address person1, address person2, uint256 amount);
     event Deposit(bytes32 indexed partyId, uint256 amount);
@@ -26,15 +27,25 @@ contract MultiSigBank{
         Party memory p = Party({
             person1: Person(msg.sender, false),
             person2: Person(_person2, false),
-            amount: msg.value
+            amount: msg.value,
+            isCreate: true
         });
 
-        bytes32 hashId = keccak256(abi.encode(msg.sender, _person2));
-        partyId[hashId] = p;
+        bytes32 partyId = keccak256(abi.encode(msg.sender, _person2));
+        party[partyId] = p;
+
+        emit CreateParty(partyId, msg.sender, _person2, msg.value);
     }
     
-    function depositMoney(address _person2) external payable{
+    function depositMoney(bytes32 _partyId) external payable{
         require(msg.value > 0, "must greater than 0.");
-        
+        require(party[_partyId].isCreate);
+        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
+
+        party[_partyId].amount += msg.value;
+
+        emit Deposit(_partyId, msg.value);
     }
+
+
 }
