@@ -20,6 +20,12 @@ contract MultiSigBank{
     event Deposit(bytes32 indexed partyId, uint256 depositAmount);
     event Withdraw(bytes32 indexed partyId, uint256 person1Amount, uint256 person2Amount);
 
+    modifier onlyInParty(bytes32 _partyId){
+        require(party[_partyId].isCreate);
+        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
+        _;
+    }
+
     function createParty(address payable _person2) external payable{
         require(msg.value > 0, "must greater than 0.");
         require(_person2 != address(0) && msg.sender != _person2);
@@ -37,20 +43,15 @@ contract MultiSigBank{
         emit CreateParty(partyId, msg.sender, _person2, msg.value);
     }
     
-    function depositMoney(bytes32 _partyId) external payable{
+    function depositMoney(bytes32 _partyId) external onlyInParty(_partyId) payable{
         require(msg.value > 0, "must greater than 0.");
-        require(party[_partyId].isCreate);
-        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
 
         party[_partyId].amount += msg.value;
 
         emit Deposit(_partyId, msg.value);
     }
 
-    function allowWithdraw(bytes32 _partyId) external{
-        require(party[_partyId].isCreate);
-        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
-
+    function allowWithdraw(bytes32 _partyId) external onlyInParty(_partyId){
         if(msg.sender == party[_partyId].person1.personAddr){
             party[_partyId].person1.isAllowWithdraw = true;
         }else{
@@ -58,9 +59,7 @@ contract MultiSigBank{
         }
     }
 
-    function withdraw(bytes32 _partyId) external{
-        require(party[_partyId].isCreate);
-        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
+    function withdraw(bytes32 _partyId) external onlyInParty(_partyId){
         require(party[_partyId].person1.isAllowWithdraw && party[_partyId].person2.isAllowWithdraw);
 
         uint256 person2Amount = party[_partyId].amount / 2;
