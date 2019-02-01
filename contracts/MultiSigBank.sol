@@ -21,14 +21,24 @@ contract MultiSigBank{
     event Withdraw(bytes32 indexed partyId, uint256 person1Amount, uint256 person2Amount);
 
     modifier onlyInParty(bytes32 _partyId){
-        require(party[_partyId].isCreate);
-        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
+        require(
+            party[_partyId].isCreate,
+            "Party has not created yet."
+        );
+        require(
+            msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr,
+            "caller address must be in party."
+        );
+        
         _;
     }
 
     function createParty(address payable _person2) external payable{
         require(msg.value > 0, "must greater than 0.");
-        require(_person2 != address(0) && msg.sender != _person2);
+        require(
+            _person2 != address(0) && msg.sender != _person2,
+            "must not be same person and must not be empty address."
+        );
 
         Party memory p = Party({
             person1: Person(msg.sender, false),
@@ -60,7 +70,10 @@ contract MultiSigBank{
     }
 
     function withdraw(bytes32 _partyId) external onlyInParty(_partyId){
-        require(party[_partyId].person1.isAllowWithdraw && party[_partyId].person2.isAllowWithdraw);
+        require(
+            party[_partyId].person1.isAllowWithdraw && party[_partyId].person2.isAllowWithdraw,
+            "both people must be allow."
+        );
 
         uint256 person2Amount = party[_partyId].amount / 2;
         uint256 person1Amount = party[_partyId].amount - person2Amount;
