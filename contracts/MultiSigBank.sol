@@ -17,7 +17,7 @@ contract MultiSigBank{
     mapping(bytes32 => Party) party;
 
     event CreateParty(bytes32 indexed partyId, address person1, address person2, uint256 amount);
-    event Deposit(bytes32 indexed partyId, uint256 amount);
+    event Deposit(bytes32 indexed partyId, uint256 depositAmount);
     event Withdraw(bytes32 indexed partyId, uint256 person1Amount, uint256 person2Amount);
 
     function createParty(address payable _person2) external payable{
@@ -56,5 +56,23 @@ contract MultiSigBank{
         }else{
             party[_partyId].person2.isAllowWithdraw = true;
         }
+    }
+
+    function withdraw(bytes32 _partyId) external{
+        require(party[_partyId].isCreate);
+        require(msg.sender == party[_partyId].person1.personAddr || msg.sender == party[_partyId].person2.personAddr);
+        require(party[_partyId].person1.isAllowWithdraw && party[_partyId].person2.isAllowWithdraw);
+
+        uint256 person2Amount = party[_partyId].amount / 2;
+        uint256 person1Amount = party[_partyId].amount - person2Amount;
+
+        party[_partyId].amount = 0;
+        party[_partyId].person1.isAllowWithdraw = false;
+        party[_partyId].person2.isAllowWithdraw = false;
+
+        party[_partyId].person1.personAddr.transfer(person1Amount);
+        party[_partyId].person2.personAddr.transfer(person2Amount);
+        
+        emit Withdraw(_partyId, person1Amount, person2Amount);
     }
 }
